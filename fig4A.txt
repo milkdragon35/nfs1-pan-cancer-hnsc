@@ -1,0 +1,52 @@
+rm(list = ls())
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+dat_expr <- readRDS('TCGA-HNSC_TPM.Rds')
+dat_group <- readRDS('TCGA-HNSC_group.Rds')
+ref_group <- 'Control'
+test_group <- 'HNSC'
+dataset <- 'TCGA-HNSC'
+s_gene <- 'NFS1'
+dat_expr_s_gene <- cbind(
+  group = dat_group$group,
+  t(dat_expr[s_gene, ])
+) 
+  as.data.frame()
+dat_expr_s_gene[, 2] <- as.numeric(dat_expr_s_gene[, 2])
+dat_expr_s_gene$group <- factor(
+  dat_expr_s_gene$group,
+  levels = c(ref_group, test_group)
+)
+set.seed(2025)
+p_boxplot_s_gene <- ggplot(
+  dat_expr_s_gene,
+  aes(
+    group,
+    get(s_gene),
+    fill = group
+  )
+  geom_boxplot(
+    outlier.color = NA
+  stat_compare_means(
+    aes(group = group),
+    label = 'p.signif',
+    method = 't.test',
+    paired = F,
+    comparisons = list(c(ref_group, test_group)),
+    symnum.args = list(
+      cutpoints = c(0, 0.001, 0.01, 0.05, 1.1),
+      symbols = c('***', '**', '*', NA)
+    )
+  ) +
+  guides(fill = 'none') +
+  labs(
+    x = element_blank(),
+    y = s_gene
+  ) +
+  geom_jitter(aes(color = group),shape = 20) +   scale_color_manual(values = c('#4DBBD5','#E64B35')) +   scale_fill_manual(values = c('#4DBBD550', '#E64B3550')) +   theme_classic() +   ggtitle(dataset) +    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5 , size = 7),
+        legend.position = "none") +
+  labs(x = element_blank(), y = 'The expression of NFS1\nLog2(TPM+1)' , fill = 'Group')
+p_boxplot_s_gene
+ggsave(file = 'fig4A.pdf', p_boxplot_s_gene, width =, height = )
